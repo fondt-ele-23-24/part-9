@@ -1,6 +1,5 @@
 from mpl_toolkits.axisartist.parasite_axes import HostAxes, ParasiteAxes
 from matplotlib import pyplot as plt
-from matplotlib import cm
 import numpy as np
 
 def euler(f, x0, t):
@@ -9,7 +8,6 @@ def euler(f, x0, t):
         nX = X[k-1] + (t[k] - t[k-1]) * f(X[k-1], t[k-1])
         X.append(nX)
     return np.array(X)
-
 
 def plot(x, y, xlabel=None, ylabel=None, title=None, figsize=None):
     plt.figure(figsize=figsize)
@@ -20,57 +18,51 @@ def plot(x, y, xlabel=None, ylabel=None, title=None, figsize=None):
     plt.grid(':')
     plt.show()
 
+    
+def plot_univariate_function(f, x, figsize=None):
+    plt.figure(figsize=figsize)
+    plt.plot(x, f(x))
+    plt.plot(plt.xlim(), [0, 0])
+    plt.grid()
+    plt.show()
+
 
 def plot_state_evolution(X, t, ylabels=None, xlabel=None, title=None, figsize=None, same_scale=False):
-    # NOTA questa è una funzione di disegno più complessa!
-    # Il codice è basato su quello di: https://matplotlib.org/3.5.0/gallery/spines/multiple_yaxis_with_spines.html
+    # Costruisco una figura con diverse sotto-figure
     fig = plt.figure(figsize=figsize)
-    
-    # Definisco le etichette per gli assi y
-    if ylabels is None:
-        ylabels = [None for i in range(X.shape[1])]
-        
+
     # Preparo la mappa dei colori
-    cmap = cm.get_cmap('Set2')
-    
-    # Preparo l'offset per gli assi addizionali
-    offset = 1
-    
-    # Build the host axis
-    host = fig.add_axes([0.15, 0.1, 0.65, 0.8], axes_class=HostAxes)
-    
-    # Disegno le altre componenti
-    for i in range(1, X.shape[1]):
+    cmap = plt.get_cmap('Set2')
+
+    # Define font size
+    fontsize = None if figsize is None else 0.9 * figsize[0]
+
+    # Considero le colonne con le diverse componenti dello stato
+    n = X.shape[1]
+    for i in range(0, n):
         if not same_scale:
-            # pass
-            # ax = ParasiteAxes(host, sharex=host)
-            # host.parasites.append(ax)
-            ax = host.get_aux_axes(viewlim_mode=None, sharex=host)
+            plt.subplot(n, 1, i+1)
+        # Draw a curve
+        y_lbl = ylabels[i] if ylabels is not None else None
+        plt.plot(t, X[:, i], color=cmap(i), label=y_lbl)
+        # Add y label if not using the same scale
+        if not same_scale:
+            plt.ylabel(y_lbl)
+        # Label the x axis
+        plt.xlabel(xlabel)
+        # Add a grid
+        plt.grid(':')
 
-            h = ax.plot(t, X[:, i], color=cmap(i))
+    # Define the title
+    if same_scale:
+        plt.title(title)
+    else:
+        plt.suptitle(title)
 
-            ax.axis[f'right{i}'] = ax.new_fixed_axis(loc="right", offset=(60 * (i-1), 0))
-            ax.axis[f'right{i}'].set_visible(True)
-            ax.axis[f'right{i}'].major_ticklabels.set_visible(True)
-            ax.axis[f'right{i}'].label.set_visible(True)
-
-            #ax.spines.right.set_position(("axes", 1 + offset * (i-1)))
-            ax.set_ylabel(ylabels[i], fontsize=14)
-            ax.yaxis.label.set_color(cmap(i))
-        else:
-            host.plot(t, X[:, i], color=cmap(i), label=ylabels[i])
-
-    # Disegno la componente principale
-    host.plot(t, X[:, 0], color=cmap(0), label=ylabels[0])
-    host.set_xlabel(xlabel, fontsize=14)
-
-    if not same_scale:
-        host.set_ylabel(ylabels[0], fontsize=14)
-        host.yaxis.label.set_color(cmap(0))
+    # Crop useless space on the borders
+    plt.tight_layout()
 
     if same_scale:
         plt.legend()
         
-    plt.title(title, fontsize=14)
-    plt.grid(':')
     plt.show()
